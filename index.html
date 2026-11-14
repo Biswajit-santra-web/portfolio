@@ -210,6 +210,36 @@ footer b{color:var(--yellow)}
 .wa-tip{position:absolute;right:76px;white-space:nowrap;background:#fff;color:#111;font-size:.82rem;font-weight:600;padding:8px 14px;border-radius:50px;opacity:0;transform:translateX(10px);pointer-events:none;transition:.3s;box-shadow:0 6px 20px rgba(0,0,0,.4)}
 .wa-float:hover .wa-tip{opacity:1;transform:none}
 @media(max-width:600px){.wa-float{right:16px;bottom:84px;width:58px;height:58px}.wa-tip{display:none}}
+/* posts */
+.posts{background:var(--bg2)}
+.post-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:24px}
+.post{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;cursor:pointer;transition:.35s;display:flex;flex-direction:column}
+.post:hover{transform:translateY(-8px);border-color:var(--yellow)}
+.post .pimg{aspect-ratio:16/10;background:linear-gradient(135deg,#1b1b1b,#242424);position:relative;overflow:hidden}
+.post .pimg img{width:100%;height:100%;object-fit:cover;transition:.6s}
+.post:hover .pimg img{transform:scale(1.06)}
+.post .pimg .ptag{position:absolute;top:14px;left:14px;background:var(--yellow);color:#111;font-size:.7rem;font-weight:800;padding:4px 14px;border-radius:50px;letter-spacing:.06em;text-transform:uppercase}
+.post .pimg .pcount{position:absolute;bottom:12px;right:12px;background:rgba(0,0,0,.7);color:#fff;font-size:.72rem;font-weight:600;padding:3px 12px;border-radius:50px}
+.post .pbody{padding:22px 24px 26px}
+.post time{color:var(--denim);font-size:.78rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
+.post h3{font-size:1.18rem;margin:6px 0 8px;line-height:1.3}
+.post p{color:var(--mute);font-size:.9rem;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.post .rd{display:inline-block;margin-top:14px;color:var(--yellow2);font-weight:700;font-size:.85rem}
+.posts-empty{border:2px dashed #333;border-radius:var(--r);padding:50px 20px;text-align:center;color:var(--mute)}
+.pm{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:160;display:none;overflow-y:auto;padding:5vh 4vw}
+.pm.open{display:block}
+.pm-box{width:min(820px,100%);margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:30px;overflow:hidden;position:relative}
+.pm-x{position:absolute;top:16px;right:16px;z-index:3;background:var(--yellow);color:#111;border:0;width:44px;height:44px;border-radius:50%;font-size:1.3rem;font-weight:800;cursor:pointer}
+.pm-main{width:100%;max-height:60vh;object-fit:contain;background:#000;display:block}
+.pm-thumbs{display:flex;gap:10px;padding:12px 18px 0;overflow-x:auto}
+.pm-thumbs img{width:74px;height:74px;object-fit:cover;border-radius:12px;cursor:pointer;opacity:.55;border:2px solid transparent;flex-shrink:0;transition:.2s}
+.pm-thumbs img.on,.pm-thumbs img:hover{opacity:1;border-color:var(--yellow)}
+.pm-in{padding:26px 30px 34px}
+.pm-in .ptag{display:inline-block;background:var(--yellow);color:#111;font-size:.72rem;font-weight:800;padding:3px 14px;border-radius:50px;text-transform:uppercase;letter-spacing:.06em}
+.pm-in time{color:var(--denim);font-size:.8rem;font-weight:600;margin-left:10px}
+.pm-in h3{font-size:clamp(1.5rem,3.5vw,2.1rem);line-height:1.2;margin:14px 0}
+.pm-in .txt{color:#d8d5cc;white-space:pre-wrap;word-wrap:break-word;font-size:1rem}
+.pm-in .txt a{color:var(--yellow2)}
 .rv{opacity:0;transform:translateY(40px);transition:opacity .8s,transform .8s}
 .rv.in{opacity:1;transform:none}
 </style>
@@ -225,6 +255,7 @@ footer b{color:var(--yellow)}
       <a href="#about">About</a>
       <a href="#skills">Skills</a>
       <a href="#work">Work</a>
+      <a href="#posts">Posts</a>
       <a href="#experience">Experience</a>
       <a href="#education">Education</a>
       <a href="https://wa.me/message/ZT7JFRFAFOU3L1" target="_blank" rel="noopener" class="cta">Let's Talk</a>
@@ -309,6 +340,15 @@ footer b{color:var(--yellow)}
     <div class="filters rv" id="filters"></div>
     <div class="work-grid" id="works"></div>
     <div class="more rv"><a id="behanceBtn" href="#" target="_blank" rel="noopener" class="btn o">More Work ↗</a></div>
+  </div>
+</section>
+
+<!-- POSTS -->
+<section class="posts" id="posts">
+  <div class="wrap">
+    <span class="eyebrow rv">Latest</span>
+    <h2 class="title rv">Posts & <em>Updates</em></h2>
+    <div class="post-grid" id="postGrid"></div>
   </div>
 </section>
 
@@ -543,6 +583,64 @@ $('#form').onsubmit=async e=>{
   }
   btn.disabled=false; btn.textContent='Send Message →';
 };
+</script>
+<div class="pm" id="pm"><div class="pm-box"><button class="pm-x" id="pmX" aria-label="Close">✕</button><div id="pmC"></div></div></div>
+
+<script>
+/* ============================================================
+   🔧 POSTS — Firebase সেটআপ (admin.html-এর সাথে একই মান বসান)
+   খালি রাখলে: শুধু এই ব্রাউজারের Preview পোস্ট দেখাবে
+   ============================================================ */
+const FB = { apiKey: "AIzaSyBD1Fl_NJGlshlk7XvxYcoedqLlpfo5jgM", projectId: "biswajit-portfolio-dca91" };
+/* ============================================================ */
+(function(){
+  const CLOUD=!!(FB.apiKey&&FB.projectId);
+  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const fmt=t=>new Date(t).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  const dec=d=>{const f=d.fields||{};return{id:d.name.split('/').pop(),title:f.title?.stringValue||'',body:f.body?.stringValue||'',tag:f.tag?.stringValue||'',link:f.link?.stringValue||'',images:(f.images?.arrayValue?.values||[]).map(v=>v.stringValue),createdAt:+(f.createdAt?.integerValue||0)}};
+  const link=t=>esc(t).replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>');
+  let posts=[];
+  const grid=document.getElementById('postGrid');
+
+  async function load(){
+    try{
+      if(CLOUD){
+        const r=await fetch(`https://firestore.googleapis.com/v1/projects/${FB.projectId}/databases/(default)/documents/posts?pageSize=100&orderBy=createdAt%20desc`);
+        const j=await r.json(); posts=(j.documents||[]).map(dec);
+      }else{
+        posts=JSON.parse(localStorage.getItem('bs_posts_local')||'[]').sort((a,b)=>b.createdAt-a.createdAt);
+      }
+    }catch(e){posts=[]}
+    render();
+  }
+  function render(){
+    if(!posts.length){grid.innerHTML='<div class="posts-empty" style="grid-column:1/-1"><b style="color:var(--yellow2)">Coming soon</b><br>New projects and updates will be posted here.</div>';return}
+    grid.innerHTML=posts.map((p,i)=>`
+      <article class="post rv in" data-i="${i}">
+        <div class="pimg">${p.images[0]?`<img loading="lazy" src="${p.images[0]}" alt="${esc(p.title)}">`:''}
+          ${p.tag?`<span class="ptag">${esc(p.tag)}</span>`:''}${p.images.length>1?`<span class="pcount">📷 ${p.images.length}</span>`:''}</div>
+        <div class="pbody"><time>${fmt(p.createdAt)}</time><h3>${esc(p.title)}</h3><p>${esc(p.body)}</p><span class="rd">Read more →</span></div>
+      </article>`).join('');
+  }
+  const pm=document.getElementById('pm'),pmC=document.getElementById('pmC');
+  function open(i){
+    const p=posts[i]; if(!p) return;
+    pmC.innerHTML=`${p.images[0]?`<img class="pm-main" id="pmMain" src="${p.images[0]}" alt="">`:''}
+      ${p.images.length>1?`<div class="pm-thumbs">${p.images.map((s,k)=>`<img src="${s}" class="${k?'':'on'}" data-k="${k}" alt="">`).join('')}</div>`:''}
+      <div class="pm-in"><span class="ptag">${esc(p.tag||'Post')}</span><time>${fmt(p.createdAt)}</time><h3>${esc(p.title)}</h3>
+      <div class="txt">${link(p.body)}</div>
+      ${p.link?`<a class="btn y" style="margin-top:24px" href="${esc(p.link)}" target="_blank" rel="noopener">View Project ↗</a>`:''}</div>`;
+    pm.classList.add('open');document.body.style.overflow='hidden';pm.scrollTop=0;
+  }
+  function close(){pm.classList.remove('open');pmC.innerHTML='';document.body.style.overflow=''}
+  grid.addEventListener('click',e=>{const a=e.target.closest('.post');if(a)open(+a.dataset.i)});
+  pmC.addEventListener('click',e=>{const t=e.target.closest('[data-k]');if(!t)return;
+    document.getElementById('pmMain').src=t.src;pmC.querySelectorAll('.pm-thumbs img').forEach(x=>x.classList.toggle('on',x===t))});
+  document.getElementById('pmX').onclick=close;
+  pm.addEventListener('click',e=>{if(e.target===pm)close()});
+  addEventListener('keydown',e=>{if(e.key==='Escape')close()});
+  load();
+})();
 </script>
 </body>
 </html>
