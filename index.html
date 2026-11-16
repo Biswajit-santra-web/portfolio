@@ -215,6 +215,8 @@ footer b{color:var(--yellow)}
 .post-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:24px}
 .post{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;cursor:pointer;transition:.35s;display:flex;flex-direction:column}
 .post:hover{transform:translateY(-8px);border-color:var(--yellow)}
+.post{text-decoration:none;color:inherit}
+.post .rd{margin-top:auto;padding-top:14px}
 .post .pimg{aspect-ratio:16/10;background:linear-gradient(135deg,#1b1b1b,#242424);position:relative;overflow:hidden}
 .post .pimg img{width:100%;height:100%;object-fit:cover;transition:.6s}
 .post:hover .pimg img{transform:scale(1.06)}
@@ -244,7 +246,7 @@ footer b{color:var(--yellow)}
 .rv.in{opacity:1;transform:none}
 </style>
 </head>
-<body>
+<body data-bs-home>
 <div class="cursor" id="cur"></div>
 
 <nav id="nav">
@@ -349,6 +351,7 @@ footer b{color:var(--yellow)}
     <span class="eyebrow rv">Latest</span>
     <h2 class="title rv">Posts & <em>Updates</em></h2>
     <div class="post-grid" id="postGrid"></div>
+    <div style="text-align:center;margin-top:44px"><a class="btn y" id="allPosts" href="posts.html" style="display:none;padding:15px 34px">View all posts →</a></div>
   </div>
 </section>
 
@@ -584,62 +587,17 @@ $('#form').onsubmit=async e=>{
   btn.disabled=false; btn.textContent='Send Message →';
 };
 </script>
-<div class="pm" id="pm"><div class="pm-box"><button class="pm-x" id="pmX" aria-label="Close">✕</button><div id="pmC"></div></div></div>
-
+<script src="blog.js"></script>
 <script>
-/* ============================================================
-   🔧 POSTS — Firebase সেটআপ (admin.html-এর সাথে একই মান বসান)
-   খালি রাখলে: শুধু এই ব্রাউজারের Preview পোস্ট দেখাবে
-   ============================================================ */
-const FB = { apiKey: "AIzaSyBD1Fl_NJGlshlk7XvxYcoedqLlpfo5jgM", projectId: "biswajit-portfolio-dca91" };
-/* ============================================================ */
-(function(){
-  const CLOUD=!!(FB.apiKey&&FB.projectId);
-  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const fmt=t=>new Date(t).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
-  const dec=d=>{const f=d.fields||{};return{id:d.name.split('/').pop(),title:f.title?.stringValue||'',body:f.body?.stringValue||'',tag:f.tag?.stringValue||'',link:f.link?.stringValue||'',images:(f.images?.arrayValue?.values||[]).map(v=>v.stringValue),createdAt:+(f.createdAt?.integerValue||0)}};
-  const link=t=>esc(t).replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>');
-  let posts=[];
-  const grid=document.getElementById('postGrid');
-
-  async function load(){
-    try{
-      if(CLOUD){
-        const r=await fetch(`https://firestore.googleapis.com/v1/projects/${FB.projectId}/databases/(default)/documents/posts?pageSize=100&orderBy=createdAt%20desc`);
-        const j=await r.json(); posts=(j.documents||[]).map(dec);
-      }else{
-        posts=JSON.parse(localStorage.getItem('bs_posts_local')||'[]').sort((a,b)=>b.createdAt-a.createdAt);
-      }
-    }catch(e){posts=[]}
-    render();
-  }
-  function render(){
-    if(!posts.length){grid.innerHTML='<div class="posts-empty" style="grid-column:1/-1"><b style="color:var(--yellow2)">Coming soon</b><br>New projects and updates will be posted here.</div>';return}
-    grid.innerHTML=posts.map((p,i)=>`
-      <article class="post rv in" data-i="${i}">
-        <div class="pimg">${p.images[0]?`<img loading="lazy" src="${p.images[0]}" alt="${esc(p.title)}">`:''}
-          ${p.tag?`<span class="ptag">${esc(p.tag)}</span>`:''}${p.images.length>1?`<span class="pcount">📷 ${p.images.length}</span>`:''}</div>
-        <div class="pbody"><time>${fmt(p.createdAt)}</time><h3>${esc(p.title)}</h3><p>${esc(p.body)}</p><span class="rd">Read more →</span></div>
-      </article>`).join('');
-  }
-  const pm=document.getElementById('pm'),pmC=document.getElementById('pmC');
-  function open(i){
-    const p=posts[i]; if(!p) return;
-    pmC.innerHTML=`${p.images[0]?`<img class="pm-main" id="pmMain" src="${p.images[0]}" alt="">`:''}
-      ${p.images.length>1?`<div class="pm-thumbs">${p.images.map((s,k)=>`<img src="${s}" class="${k?'':'on'}" data-k="${k}" alt="">`).join('')}</div>`:''}
-      <div class="pm-in"><span class="ptag">${esc(p.tag||'Post')}</span><time>${fmt(p.createdAt)}</time><h3>${esc(p.title)}</h3>
-      <div class="txt">${link(p.body)}</div>
-      ${p.link?`<a class="btn y" style="margin-top:24px" href="${esc(p.link)}" target="_blank" rel="noopener">View Project ↗</a>`:''}</div>`;
-    pm.classList.add('open');document.body.style.overflow='hidden';pm.scrollTop=0;
-  }
-  function close(){pm.classList.remove('open');pmC.innerHTML='';document.body.style.overflow=''}
-  grid.addEventListener('click',e=>{const a=e.target.closest('.post');if(a)open(+a.dataset.i)});
-  pmC.addEventListener('click',e=>{const t=e.target.closest('[data-k]');if(!t)return;
-    document.getElementById('pmMain').src=t.src;pmC.querySelectorAll('.pm-thumbs img').forEach(x=>x.classList.toggle('on',x===t))});
-  document.getElementById('pmX').onclick=close;
-  pm.addEventListener('click',e=>{if(e.target===pm)close()});
-  addEventListener('keydown',e=>{if(e.key==='Escape')close()});
-  load();
+(async function(){
+  const g=document.getElementById('postGrid');
+  try{
+    const list=await BS.listPosts();
+    if(!list.length){ g.innerHTML='<div class="posts-empty" style="grid-column:1/-1"><b style="color:var(--yellow2)">Coming soon</b><br>New projects and updates will be posted here.</div>'; return; }
+    g.innerHTML=list.slice(0,3).map(BS.card).join('');
+    BS.fillMissingCovers(g);
+    document.getElementById('allPosts').style.display='inline-flex';
+  }catch(e){ g.innerHTML='<div class="posts-empty" style="grid-column:1/-1">Posts could not be loaded right now.</div>'; }
 })();
 </script>
 </body>
